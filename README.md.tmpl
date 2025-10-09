@@ -1,0 +1,166 @@
+# {{.ProjectName}}
+
+A Go application built with Vandor.
+
+## Architecture
+
+This project uses **{{.ArchitectureType}}** architecture with an architecture-agnostic structure:
+
+```
+internal/
+├── domain/              # Business logic (architecture-specific internals)
+├── adapter/             # Infrastructure & transport adapters
+├── pkg/                 # Shared utilities (logger, config)
+└── vpkg/                # Installed VPKG packages
+```
+
+## Getting Started
+
+### Prerequisites
+
+- Go 1.24 or later
+- Task (https://taskfile.dev) - `go install github.com/go-task/task/v3/cmd/task@latest`
+- Vandor CLI - `curl -fsSL https://vandor.dev/install.sh | bash`
+
+### Installation
+
+1. Copy the example config:
+```bash
+cp config/config.yaml.example config/config.yaml
+```
+
+2. Install dependencies:
+```bash
+go mod tidy
+```
+
+3. Run the application:
+```bash
+task run
+```
+
+## Adding Components
+
+This project starts minimal with only logger and config. Add components as needed:
+
+```bash
+# Add HTTP server
+vandor vpkg add transport/http
+
+# Add PostgreSQL database
+vandor vpkg add storage/postgres
+
+# Add Redis cache
+vandor vpkg add cache/redis
+
+# Add Kafka messaging
+vandor vpkg add messaging/kafka
+
+# See all available packages
+vandor vpkg list
+```
+
+## Creating Domains
+
+Domains represent business capabilities, not database tables:
+
+```bash
+# Create a domain (business capability)
+vandor add domain order
+
+# This creates the architecture-appropriate structure
+# For hexagonal: core/, port/, application/
+```
+
+## Available Commands
+
+- `task build` - Build the application
+- `task run` - Run the application
+- `task test` - Run tests
+- `task test:coverage` - Run tests with coverage
+- `task lint` - Run linter
+- `task fmt` - Format code
+- `task tidy` - Tidy dependencies
+- `task clean` - Clean build artifacts
+
+### VPKG Commands
+
+- `task vpkg:add -- <package>` - Add a VPKG package
+- `task vpkg:list` - List installed packages
+- `task vpkg:remove -- <package>` - Remove a package
+
+### Domain Commands
+
+- `task domain:add -- <name>` - Add a new domain
+- `task sync` - Regenerate all code
+
+## Project Structure
+
+```
+.
+├── cmd/
+│   └── app/                  # Application entrypoint
+├── config/
+│   └── config.yaml.example   # Configuration template
+├── internal/
+│   ├── domain/               # Business logic domains (empty initially)
+│   ├── adapter/              # Infrastructure adapters (empty initially)
+│   ├── pkg/
+│   │   ├── logger/           # Logging (included)
+│   │   └── config/           # Configuration (included)
+│   └── vpkg/                 # Installed VPKG packages (empty initially)
+├── test/
+│   ├── integration/          # Integration tests
+│   ├── e2e/                  # End-to-end tests
+│   └── fixture/              # Test fixtures
+├── taskfile.yaml             # Task definitions
+├── go.mod                    # Go dependencies
+└── README.md                 # This file
+```
+
+## Configuration
+
+Configuration can be set via:
+
+1. **Config file**: `config/config.yaml`
+2. **Environment variables**: Prefix with `APP_` (e.g., `APP_LOGGER_LEVEL=debug`)
+
+See `config/config.yaml.example` for available options.
+
+## Development
+
+### Running Tests
+
+```bash
+task test
+```
+
+### Code Coverage
+
+```bash
+task test:coverage
+# Opens coverage.html in browser
+```
+
+### Linting
+
+```bash
+task lint
+```
+
+### Formatting
+
+```bash
+task fmt
+```
+
+## Documentation
+
+- [Vandor Documentation](https://docs.vandor.dev)
+- [Architecture Guide](https://docs.vandor.dev/architecture)
+- [VPKG Packages](https://docs.vandor.dev/vpkg)
+- [Domain-Driven Design](https://docs.vandor.dev/ddd)
+
+## License
+
+{{.License}}

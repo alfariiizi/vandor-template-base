@@ -1,0 +1,73 @@
+version: '3'
+
+tasks:
+  build:
+    desc: Build the application
+    cmds:
+      - go build -o bin/app ./cmd/app
+
+  run:
+    desc: Run the application
+    cmds:
+      - go run ./cmd/app
+
+  test:
+    desc: Run tests
+    cmds:
+      - go test ./... -v
+
+  test:coverage:
+    desc: Run tests with coverage
+    cmds:
+      - go test ./... -coverprofile=coverage.out
+      - go tool cover -html=coverage.out -o coverage.html
+
+  lint:
+    desc: Run linter
+    cmds:
+      - golangci-lint run
+
+  fmt:
+    desc: Format code
+    cmds:
+      - go fmt ./...
+      - goimports -w .
+
+  tidy:
+    desc: Tidy dependencies
+    cmds:
+      - go mod tidy
+
+  clean:
+    desc: Clean build artifacts
+    cmds:
+      - rm -rf bin/
+      - rm -f coverage.out coverage.html
+
+  # VPKG commands
+  vpkg:add:
+    desc: Add a VPKG package
+    cmds:
+      - vandor vpkg add {{.CLI_ARGS}}
+
+  vpkg:list:
+    desc: List installed VPKG packages
+    cmds:
+      - vandor vpkg list
+
+  vpkg:remove:
+    desc: Remove a VPKG package
+    cmds:
+      - vandor vpkg remove {{.CLI_ARGS}}
+
+  # Domain commands
+  domain:add:
+    desc: Add a new domain
+    cmds:
+      - vandor add domain {{.CLI_ARGS}}
+
+  # Code generation
+  sync:
+    desc: Regenerate all code
+    cmds:
+      - vandor sync all
