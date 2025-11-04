@@ -1,0 +1,48 @@
+name: base
+version: 1.0.0
+description: Base Vandor template with hexagonal architecture structure
+author: Vandor Team
+repository: https://github.com/alfariiizi/vandor-template-base
+compatible_cli_versions: ">=0.1.0"
+
+# Variables that will be replaced in template files
+variables:
+  - name: ModulePath
+    description: Go module path (e.g., github.com/username/project)
+    placeholder: "{{.ModulePath}}"
+    required: true
+
+  - name: ProjectName
+    description: Project name
+    placeholder: "{{.ProjectName}}"
+    required: true
+
+  - name: Version
+    description: Initial project version
+    placeholder: "{{.Version}}"
+    default: "0.1.0"
+    required: false
+
+# Files that contain template variables and need processing
+template_files:
+  - "go.mod.tmpl"
+  - "README.md.tmpl"
+  - "cmd/app/main.go"
+  - "internal/pkg/config/config.go"
+
+# Instructions shown after project generation
+post_generation_message: |
+  🎉 Project created successfully!
+
+  Next steps:
+    1. cd {{.ProjectName}}
+    2. go mod tidy
+    3. task build
+    4. task run:dev
+
+  Documentation:
+    • Getting Started: https://vandor.dev/docs/getting-started
+    • Architecture: https://vandor.dev/docs/architecture
+    • Examples: https://vandor.dev/docs/examples
+
+  Happy coding! 🚀
