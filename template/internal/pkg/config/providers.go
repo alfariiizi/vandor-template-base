@@ -1,0 +1,21 @@
+package config
+
+// Providers for extracting component-specific configurations
+// These functions prevent circular dependencies by allowing components
+// to depend only on their own config types, not the entire Config struct
+
+// ProvideAppConfig extracts app configuration
+func ProvideAppConfig(cfg *Config) AppConfig {
+	return cfg.App
+}
+
+// ProvideLoggerConfig extracts logger configuration
+func ProvideLoggerConfig(cfg *Config) LoggerConfig {
+	return cfg.Logger
+}
+
+// VPKG packages will add their provider functions here
+// Example after installing vandor/http:
+// func ProvideHTTPConfig(cfg *Config) http.Config {
+//     return cfg.HTTP
+// }

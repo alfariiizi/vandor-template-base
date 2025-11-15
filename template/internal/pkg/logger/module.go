@@ -3,7 +3,7 @@ package logger
 import (
 	"go.uber.org/fx"
 
-	"{{.ModuleName}}/internal/pkg/config"
+	"{{.Module}}/internal/pkg/config"
 )
 
 // Module provides logger for dependency injection
@@ -12,10 +12,11 @@ var Module = fx.Module("logger",
 )
 
 // NewLogger creates a new logger from config
-func NewLogger(cfg *config.Config) Logger {
+// Uses config.LoggerConfig instead of full *config.Config to avoid circular dependencies
+func NewLogger(cfg config.LoggerConfig) Logger {
 	loggerCfg := &Config{
-		Level:  cfg.Logger.Level,
-		Format: cfg.Logger.Format,
+		Level:  cfg.Level,
+		Format: cfg.Format,
 	}
 	return New(loggerCfg)
 }

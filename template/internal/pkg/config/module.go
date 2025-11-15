@@ -8,7 +8,11 @@ import (
 
 // Module provides config for dependency injection
 var Module = fx.Module("config",
-	fx.Provide(NewConfig),
+	fx.Provide(
+		NewConfig,
+		ProvideAppConfig,
+		ProvideLoggerConfig,
+	),
 )
 
 // NewConfig creates a new config from file
