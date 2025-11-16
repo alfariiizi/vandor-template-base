@@ -1,4 +1,4 @@
-version: '3'
+version: "3"
 
 tasks:
   # Default entry point (cmd/app)
@@ -49,31 +49,3 @@ tasks:
     cmds:
       - rm -rf bin/
       - rm -f coverage.out coverage.html
-
-  # VPKG commands
-  vpkg:add:
-    desc: Add a VPKG package
-    cmds:
-      - vandor vpkg add {{.CLI_ARGS}}
-
-  vpkg:list:
-    desc: List installed VPKG packages
-    cmds:
-      - vandor vpkg list
-
-  vpkg:remove:
-    desc: Remove a VPKG package
-    cmds:
-      - vandor vpkg remove {{.CLI_ARGS}}
-
-  # Domain commands
-  domain:add:
-    desc: Add a new domain
-    cmds:
-      - vandor add domain {{.CLI_ARGS}}
-
-  # Code generation
-  sync:
-    desc: Regenerate all code
-    cmds:
-      - vandor sync all
