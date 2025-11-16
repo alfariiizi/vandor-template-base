@@ -11,10 +11,6 @@ import (
 
 	"{{.ModuleName}}/cmd/app/config"
 	"{{.ModuleName}}/internal/pkg/logger"
-
-	// Import VPKG modules here:
-	// "{{.ModuleName}}/internal/vpkg/transport/http"
-	// "{{.ModuleName}}/internal/vpkg/storage/postgres"
 )
 
 func main() {
@@ -40,14 +36,9 @@ func registerHooks(lc fx.Lifecycle, log logger.Logger, cfg *config.Config) {
 		OnStart: func(ctx context.Context) error {
 			// Print full config in development, summary in production
 			if cfg.App.Env == "development" {
-				configJSON, err := json.MarshalIndent(cfg, "", "  ")
-				if err != nil {
-					log.Warn("Failed to marshal config", "error", err)
-				} else {
-					log.Info("Configuration loaded (development mode)",
-						"config", string(configJSON),
-					)
-				}
+				log.Info("Configuration loaded (development mode)",
+					"config", cfg,
+				)
 			} else {
 				log.Info("Starting application...",
 					"env", cfg.App.Env,
