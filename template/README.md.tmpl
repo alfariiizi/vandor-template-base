@@ -21,6 +21,8 @@ internal/
 - Go 1.24 or later
 - Task (https://taskfile.dev) - `go install github.com/go-task/task/v3/cmd/task@latest`
 - Vandor CLI - `curl -fsSL https://vandor.dev/install.sh | bash`
+- Air (for hot reload in development) - `go install github.com/air-verse/air@latest`
+- Docker & Docker Compose (optional, for containerized development)
 
 ### Installation
 
@@ -74,8 +76,14 @@ vandor add domain order
 
 ## Available Commands
 
-- `task build` - Build the application
-- `task run` - Run the application
+### Entry Point Tasks (cmd/app)
+
+- `task dev:app` - Run with hot reload (Air) - **Recommended for development**
+- `task build:app` - Build the binary to `bin/app`
+- `task run:app` - Run the compiled binary
+
+### General Tasks
+
 - `task test` - Run tests
 - `task test:coverage` - Run tests with coverage
 - `task lint` - Run linter
@@ -129,6 +137,32 @@ See `config/config.yaml.example` for available options.
 
 ## Development
 
+### Hot Reload Development
+
+For the best development experience with automatic reload on code changes:
+
+```bash
+task dev:app
+```
+
+This uses [Air](https://github.com/air-verse/air) to watch for file changes and automatically rebuild and restart your application. Each entry point has its own Air config (`.air.[name].toml`).
+
+### Multiple Entry Points
+
+When you add new entry points with `vandor add cmd`, each gets its own task set:
+
+```bash
+# After: vandor add cmd worker
+task dev:worker     # Hot reload for worker
+task build:worker   # Build worker binary
+task run:worker     # Run worker binary
+
+# After: vandor add cmd api
+task dev:api        # Hot reload for API
+task build:api      # Build API binary
+task run:api        # Run API binary
+```
+
 ### Running Tests
 
 ```bash
@@ -152,6 +186,54 @@ task lint
 
 ```bash
 task fmt
+```
+
+## Docker
+
+### Docker Compose (Recommended for Local Development)
+
+Run the entire stack with dependencies:
+
+```bash
+# Start all services
+docker-compose up
+
+# Start in background
+docker-compose up -d
+
+# Start specific service
+docker-compose up app
+
+# View logs
+docker-compose logs -f app
+
+# Stop all services
+docker-compose down
+```
+
+The `docker-compose.yaml` includes:
+- **app** - Your application
+- **postgres** - PostgreSQL database (commented, uncomment after adding storage/postgres)
+- **redis** - Redis cache (commented, uncomment after adding cache/redis)
+- **minio** - MinIO object storage (commented, uncomment after adding storage/minio)
+- **kafka** - Kafka messaging (commented, uncomment after adding messaging/kafka)
+
+### Build Individual Docker Images
+
+```bash
+# Build app image
+docker build -f cmd/app/Dockerfile -t {{.ProjectName}}-app:latest .
+
+# Build for specific entry point (after vandor add cmd)
+docker build -f cmd/api/Dockerfile -t {{.ProjectName}}-api:latest .
+docker build -f cmd/worker/Dockerfile -t {{.ProjectName}}-worker:latest .
+```
+
+### Multi-platform Builds
+
+```bash
+docker buildx build --platform linux/amd64,linux/arm64 \
+  -f cmd/app/Dockerfile -t {{.ProjectName}}-app:latest .
 ```
 
 ## Documentation

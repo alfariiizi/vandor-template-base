@@ -1,0 +1,77 @@
+# App
+
+Default entry point for {{.ProjectName}}.
+
+**Type:** FX Module - Dependency injection with Uber FX
+
+## Development
+
+### Hot Reload (Recommended)
+
+Run with automatic reload on code changes:
+```bash
+task dev:app
+```
+
+Uses Air to watch for changes. Config: `.air.app.toml`
+
+### Manual Run
+
+```bash
+# Direct run
+go run ./cmd/app
+
+# Or build first
+task build:app
+task run:app
+```
+
+## Docker
+
+Build the image:
+```bash
+docker build -f cmd/app/Dockerfile -t {{.ProjectName}}-app:latest .
+```
+
+Run the container:
+```bash
+docker run -p 8080:8080 \
+  -v $(pwd)/config:/root/config \
+  {{.ProjectName}}-app:latest
+```
+
+Multi-platform build with buildx:
+```bash
+docker buildx build --platform linux/amd64,linux/arm64 \
+  -f cmd/app/Dockerfile -t {{.ProjectName}}-app:latest .
+```
+
+## Docker Compose
+
+Run with docker-compose:
+```bash
+docker-compose up app
+```
+
+## Configuration
+
+Edit `config/config.yaml` or use environment variables.
+
+## Dependencies
+
+This entry point wires the following modules:
+- config.Module - Configuration management
+- logger.Module - Logging
+
+**Add more modules as needed:**
+1. Install VPKG packages: `vandor vpkg add transport/http`
+2. Create domains: `vandor add domain order`
+3. Uncomment imports in `cmd/app/main.go`
+4. Wire the modules in the FX application
+
+## Next Steps
+
+1. Add VPKG packages for infrastructure (HTTP, database, cache, etc.)
+2. Create business domains
+3. Wire only the modules this entry point needs
+4. Deploy with Docker or Kubernetes

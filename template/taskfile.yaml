@@ -1,15 +1,21 @@
 version: '3'
 
 tasks:
-  build:
-    desc: Build the application
+  # Default entry point (cmd/app)
+  dev:app:
+    desc: Run app with hot reload (Air)
+    cmds:
+      - air -c .air.app.toml
+
+  build:app:
+    desc: Build app binary
     cmds:
       - go build -o bin/app ./cmd/app
 
-  run:
-    desc: Run the application
+  run:app:
+    desc: Run app binary
     cmds:
-      - go run ./cmd/app
+      - ./bin/app
 
   test:
     desc: Run tests
