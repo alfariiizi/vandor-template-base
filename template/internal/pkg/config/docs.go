@@ -107,7 +107,13 @@ func GenerateYAMLExample() string {
 			
 			// Get field name (remove section prefix)
 			parts := strings.SplitN(field.Path, ".", 2)
-			fieldName := parts[1]
+			var fieldName string
+			if len(parts) == 2 {
+				fieldName = parts[1]
+			} else {
+				// Top-level field without section
+				fieldName = parts[0]
+			}
 			
 			// Add the actual field with default value
 			value := field.Default
@@ -115,8 +121,8 @@ func GenerateYAMLExample() string {
 				value = field.Example
 			}
 			
-			// Quote strings
-			if field.Type == "string" && value != "" {
+			// Quote strings (check if base type is string)
+			if strings.Contains(field.Type, "string") && value != "" {
 				value = fmt.Sprintf(`"%s"`, value)
 			}
 			

@@ -36,12 +36,6 @@ type zapLogger struct {
 	logger *zap.SugaredLogger
 }
 
-// Config holds logger configuration
-type Config struct {
-	Level  string // debug, info, warn, error
-	Format string // json, console
-}
-
 // DefaultConfig returns default logger configuration
 func DefaultConfig() *Config {
 	return &Config{

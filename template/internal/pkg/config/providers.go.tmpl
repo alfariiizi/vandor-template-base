@@ -1,5 +1,9 @@
 package config
 
+import (
+	"{{.ModuleName}}/internal/pkg/logger"
+)
+
 // Providers for extracting component-specific configurations
 // These functions prevent circular dependencies by allowing components
 // to depend only on their own config types, not the entire Config struct
@@ -10,7 +14,7 @@ func ProvideAppConfig(cfg *Config) AppConfig {
 }
 
 // ProvideLoggerConfig extracts logger configuration
-func ProvideLoggerConfig(cfg *Config) LoggerConfig {
+func ProvideLoggerConfig(cfg *Config) logger.Config {
 	return cfg.Logger
 }
 

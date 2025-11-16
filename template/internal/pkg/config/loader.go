@@ -10,25 +10,6 @@ import (
 	"github.com/spf13/viper"
 )
 
-// Config holds all application configuration
-type Config struct {
-	App    AppConfig    `mapstructure:"app"`
-	Logger LoggerConfig `mapstructure:"logger"`
-}
-
-// AppConfig holds application-level configuration
-type AppConfig struct {
-	Name    string `mapstructure:"name" validate:"required,min=1" default:"vandor-app" example:"my-awesome-app" doc:"Application name used for logging and metrics"`
-	Version string `mapstructure:"version" validate:"required,semver" default:"0.1.0" example:"1.2.3" doc:"Application version in semantic versioning format"`
-	Env     string `mapstructure:"env" validate:"required,oneof=development staging production" default:"development" example:"production" doc:"Environment mode: development, staging, or production"`
-}
-
-// LoggerConfig holds logger configuration
-type LoggerConfig struct {
-	Level  string `mapstructure:"level" validate:"required,oneof=debug info warn error" default:"info" example:"debug" doc:"Log level: debug, info, warn, or error"`
-	Format string `mapstructure:"format" validate:"required,oneof=json console" default:"console" example:"json" doc:"Log format: json for production, console for development"`
-}
-
 var validate *validator.Validate
 
 func init() {
