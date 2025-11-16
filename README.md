@@ -55,9 +55,10 @@ template/
 - **Code Generation**: Built-in generators for domains, use cases, services
 - **Testing Support**: Structure for unit, integration, and e2e tests
 - **Task Runner**: Pre-configured Taskfile for common operations
-- **Configuration**: YAML-based configuration management
+- **Configuration**: Per-command config with smart merging and secret management
 - **Logging**: Structured logging setup
 - **VPKG System**: Package management for reusable components
+- **Multi-Command Support**: Create multiple entry points (app, worker, migrate) with separate configs
 
 ## Usage
 
@@ -110,6 +111,62 @@ These variables are automatically replaced during project generation:
 | `{{.ModulePath}}` | Go module path | `github.com/username/myproject` |
 | `{{.ProjectName}}` | Project name | `myproject` |
 | `{{.Version}}` | Initial version | `0.1.0` |
+
+## Configuration System
+
+### Per-Command Configuration
+
+Each command has its own configuration package at `cmd/{name}/config/`:
+
+```
+cmd/app/config/
+├── config.go      # Config struct (defines what this command needs)
+├── module.go      # FX module with smart loader
+└── providers.go   # Provider functions
+```
+
+### Smart Config Merging
+
+Config files in `config/` directory are automatically discovered and merged:
+
+```
+config/
+├── config.yaml            # Base (shared by all commands)
+├── config.app.yaml        # App-specific overrides
+├── config.worker.yaml     # Worker-specific overrides
+└── config.production.yaml # Environment-specific
+```
+
+**Merge order** (later overrides earlier):
+1. `config.yaml` (base)
+2. `config.*.yaml` (partials)
+3. `config.{command}.yaml` (command-specific)
+4. `config.{env}.yaml` (environment: development/production)
+5. `.env` file (development only)
+6. Environment variables (highest priority)
+
+### Secret Management
+
+**Development:**
+```bash
+# Copy template
+cp .env.example .env
+
+# Edit with your secrets
+vim .env
+```
+
+**Production:**
+```bash
+# Use environment variables (e.g., from K8s Secrets)
+export POSTGRES_PASSWORD=supersecret
+export OPENAI_API_KEY=sk-...
+```
+
+**Security:**
+- ✅ `.env.example` is committed (template)
+- ❌ `.env` is gitignored (real secrets)
+- ❌ Never commit secrets to `config/*.yaml`
 
 ## After Generation
 

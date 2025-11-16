@@ -2,137 +2,194 @@ package config
 
 import (
 	"fmt"
-	"reflect"
-	"strconv"
+	"os"
+	"path/filepath"
 	"strings"
 
-	"github.com/go-playground/validator/v10"
+	"github.com/joho/godotenv"
 	"github.com/spf13/viper"
 )
 
-var validate *validator.Validate
-
-func init() {
-	validate = validator.New()
+// LoaderOptions configures the config loader
+type LoaderOptions struct {
+	ConfigDir   string   // Directory containing config files (default: "./config")
+	CommandName string   // Command name for command-specific configs
+	EnvFile     string   // Path to .env file (default: ".env")
+	LoadEnvFile bool     // Whether to load .env file (default: true in development)
+	EnvPrefix   string   // Prefix for environment variables (default: "APP")
+	Patterns    []string // Additional file patterns to load
 }
 
-// Load loads configuration from file and environment variables
-func Load(configPath string) (*Config, error) {
-	v := viper.New()
-
-	// Set defaults from struct tags
-	if err := setDefaultsFromTags(v, &Config{}); err != nil {
-		return nil, fmt.Errorf("failed to set defaults: %w", err)
+// DefaultLoaderOptions returns default loader options
+func DefaultLoaderOptions() *LoaderOptions {
+	return &LoaderOptions{
+		ConfigDir:   "./config",
+		EnvFile:     ".env",
+		LoadEnvFile: os.Getenv("APP_ENV") != "production",
+		EnvPrefix:   "APP",
+		Patterns:    []string{},
 	}
-
-	// Set config file
-	if configPath != "" {
-		v.SetConfigFile(configPath)
-	} else {
-		v.SetConfigName("config")
-		v.SetConfigType("yaml")
-		v.AddConfigPath("./config")
-		v.AddConfigPath(".")
-	}
-
-	// Read config file
-	if err := v.ReadInConfig(); err != nil {
-		// Config file not found is okay if we have environment variables
-		if _, ok := err.(viper.ConfigFileNotFoundError); !ok {
-			return nil, fmt.Errorf("failed to read config file: %w", err)
-		}
-	}
-
-	// Environment variables
-	v.SetEnvPrefix("APP")
-	v.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
-	v.AutomaticEnv()
-
-	// Unmarshal config
-	var cfg Config
-	if err := v.Unmarshal(&cfg); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal config: %w", err)
-	}
-
-	// Validate config
-	if err := validate.Struct(&cfg); err != nil {
-		return nil, fmt.Errorf("config validation failed: %w", err)
-	}
-
-	return &cfg, nil
 }
 
-// setDefaultsFromTags sets default values from struct tags
-func setDefaultsFromTags(v *viper.Viper, cfg interface{}) error {
-	return setDefaultsRecursive(v, "", reflect.ValueOf(cfg).Elem(), reflect.TypeOf(cfg).Elem())
+// LoadForCommand loads and merges all relevant config files for a command
+// Merge order (later overrides earlier):
+//  1. config.yaml (base)
+//  2. config.*.yaml (all other partials)
+//  3. config.{command}.yaml (command-specific)
+//  4. config.{env}.yaml (environment-specific)
+//  5. .env file (if enabled)
+//  6. Environment variables
+func LoadForCommand(opts *LoaderOptions) (map[string]interface{}, error) {
+	if opts == nil {
+		opts = DefaultLoaderOptions()
+	}
+
+	// 1. Load .env file first (if enabled)
+	if opts.LoadEnvFile {
+		if err := loadEnvFile(opts.EnvFile); err != nil {
+			// Non-fatal: .env file is optional
+			// fmt.Printf("Note: .env file not loaded: %v\n", err)
+		}
+	}
+
+	// 2. Discover all config files
+	files, err := discoverConfigFiles(opts)
+	if err != nil {
+		return nil, fmt.Errorf("failed to discover config files: %w", err)
+	}
+
+	// 3. Merge all YAML files
+	merged, err := mergeConfigFiles(files, opts)
+	if err != nil {
+		return nil, fmt.Errorf("failed to merge config files: %w", err)
+	}
+
+	return merged, nil
 }
 
-// setDefaultsRecursive recursively sets defaults from struct tags
-func setDefaultsRecursive(v *viper.Viper, prefix string, val reflect.Value, typ reflect.Type) error {
-	for i := 0; i < typ.NumField(); i++ {
-		field := typ.Field(i)
-		fieldValue := val.Field(i)
+// loadEnvFile loads environment variables from .env file
+func loadEnvFile(envFile string) error {
+	if _, err := os.Stat(envFile); os.IsNotExist(err) {
+		return fmt.Errorf(".env file not found: %s", envFile)
+	}
 
-		// Get mapstructure tag for the key name
-		mapstructureTag := field.Tag.Get("mapstructure")
-		if mapstructureTag == "" || mapstructureTag == "-" {
-			continue
-		}
-
-		// Build the full key path
-		var key string
-		if prefix != "" {
-			key = prefix + "." + mapstructureTag
-		} else {
-			key = mapstructureTag
-		}
-
-		// Handle nested structs
-		if field.Type.Kind() == reflect.Struct {
-			if err := setDefaultsRecursive(v, key, fieldValue, field.Type); err != nil {
-				return err
-			}
-			continue
-		}
-
-		// Get default tag
-		defaultTag := field.Tag.Get("default")
-		if defaultTag == "" {
-			continue
-		}
-
-		// Set default value based on field type
-		switch field.Type.Kind() {
-		case reflect.String:
-			v.SetDefault(key, defaultTag)
-		case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-			intVal, err := strconv.ParseInt(defaultTag, 10, 64)
-			if err != nil {
-				return fmt.Errorf("invalid int default for %s: %w", key, err)
-			}
-			v.SetDefault(key, intVal)
-		case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
-			uintVal, err := strconv.ParseUint(defaultTag, 10, 64)
-			if err != nil {
-				return fmt.Errorf("invalid uint default for %s: %w", key, err)
-			}
-			v.SetDefault(key, uintVal)
-		case reflect.Bool:
-			boolVal, err := strconv.ParseBool(defaultTag)
-			if err != nil {
-				return fmt.Errorf("invalid bool default for %s: %w", key, err)
-			}
-			v.SetDefault(key, boolVal)
-		case reflect.Float32, reflect.Float64:
-			floatVal, err := strconv.ParseFloat(defaultTag, 64)
-			if err != nil {
-				return fmt.Errorf("invalid float default for %s: %w", key, err)
-			}
-			v.SetDefault(key, floatVal)
-		default:
-			return fmt.Errorf("unsupported type for default tag: %s (%s)", key, field.Type.Kind())
-		}
+	if err := godotenv.Load(envFile); err != nil {
+		return fmt.Errorf("failed to load .env file: %w", err)
 	}
 
 	return nil
+}
+
+// discoverConfigFiles finds all config files to load based on patterns
+func discoverConfigFiles(opts *LoaderOptions) ([]string, error) {
+	var files []string
+	env := getEnvironment()
+
+	// Priority order for file discovery
+	patterns := []string{
+		"config.yaml",              // Base config (highest priority base)
+		"config.yml",               // Alternative extension
+	}
+
+	// Add all partial configs (config.*.yaml) except command and env specific
+	partials, err := filepath.Glob(filepath.Join(opts.ConfigDir, "config.*.yaml"))
+	if err == nil {
+		for _, partial := range partials {
+			base := filepath.Base(partial)
+			// Skip command-specific and env-specific files
+			if !strings.Contains(base, opts.CommandName) && !strings.Contains(base, env) {
+				patterns = append(patterns, base)
+			}
+		}
+	}
+
+	// Add command-specific config
+	if opts.CommandName != "" {
+		patterns = append(patterns,
+			fmt.Sprintf("config.%s.yaml", opts.CommandName),
+			fmt.Sprintf("config.%s.yml", opts.CommandName),
+		)
+	}
+
+	// Add environment-specific config (highest priority)
+	patterns = append(patterns,
+		fmt.Sprintf("config.%s.yaml", env),
+		fmt.Sprintf("config.%s.yml", env),
+	)
+
+	// Add custom patterns
+	patterns = append(patterns, opts.Patterns...)
+
+	// Convert patterns to full paths and check existence
+	for _, pattern := range patterns {
+		path := filepath.Join(opts.ConfigDir, pattern)
+		if _, err := os.Stat(path); err == nil {
+			files = append(files, path)
+		}
+	}
+
+	if len(files) == 0 {
+		return nil, fmt.Errorf("no config files found in %s", opts.ConfigDir)
+	}
+
+	return files, nil
+}
+
+// mergeConfigFiles merges multiple config files using Viper
+func mergeConfigFiles(files []string, opts *LoaderOptions) (map[string]interface{}, error) {
+	v := viper.New()
+
+	// Configure Viper
+	v.SetEnvPrefix(opts.EnvPrefix)
+	v.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
+	v.AutomaticEnv()
+
+	// Merge all config files in order
+	for _, file := range files {
+		v.SetConfigFile(file)
+		if err := v.MergeInConfig(); err != nil {
+			return nil, fmt.Errorf("failed to merge config file %s: %w", file, err)
+		}
+	}
+
+	// Convert to map
+	return v.AllSettings(), nil
+}
+
+// getEnvironment returns current environment
+func getEnvironment() string {
+	env := os.Getenv("APP_ENV")
+	if env == "" {
+		env = "development"
+	}
+	return env
+}
+
+// DetectCommandName attempts to detect the command name from binary or path
+func DetectCommandName() string {
+	// Try from binary name first
+	binary := filepath.Base(os.Args[0])
+	if binary != "" && binary != "main" && binary != "go" {
+		return binary
+	}
+
+	// Try from working directory (if running from cmd/{name}/)
+	wd, err := os.Getwd()
+	if err == nil && strings.Contains(wd, "/cmd/") {
+		parts := strings.Split(wd, "/cmd/")
+		if len(parts) > 1 {
+			cmdPart := strings.Split(parts[1], "/")[0]
+			if cmdPart != "" {
+				return cmdPart
+			}
+		}
+	}
+
+	// Fallback: try from environment variable
+	if cmdName := os.Getenv("APP_COMMAND"); cmdName != "" {
+		return cmdName
+	}
+
+	// Default fallback
+	return "app"
 }

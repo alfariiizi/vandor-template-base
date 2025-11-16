@@ -1,0 +1,16 @@
+package config
+
+import (
+	pkgconfig "{{.ModuleName}}/internal/pkg/config"
+	"{{.ModuleName}}/internal/pkg/logger"
+)
+
+// Config holds all configuration for the app command
+type Config struct {
+	App    pkgconfig.AppConfig `mapstructure:"app"`
+	Logger logger.Config       `mapstructure:"logger"`
+
+	// VPKG packages will add their config fields here
+	// Example after installing vandor/http:
+	// HTTP   http.Config         `mapstructure:"http"`
+}

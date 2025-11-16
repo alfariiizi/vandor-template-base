@@ -1,6 +1,7 @@
 package config
 
 import (
+	pkgconfig "{{.ModuleName}}/internal/pkg/config"
 	"{{.ModuleName}}/internal/pkg/logger"
 )
 
@@ -9,7 +10,7 @@ import (
 // to depend only on their own config types, not the entire Config struct
 
 // ProvideAppConfig extracts app configuration
-func ProvideAppConfig(cfg *Config) AppConfig {
+func ProvideAppConfig(cfg *Config) pkgconfig.AppConfig {
 	return cfg.App
 }
 

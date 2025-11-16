@@ -1,0 +1,73 @@
+package config
+
+import (
+	"flag"
+	"fmt"
+
+	"github.com/mitchellh/mapstructure"
+	"go.uber.org/fx"
+
+	pkgconfig "{{.ModuleName}}/internal/pkg/config"
+)
+
+// Module provides config for dependency injection
+var Module = fx.Module("config",
+	fx.Provide(
+		NewConfig,
+		ProvideAppConfig,
+		ProvideLoggerConfig,
+		// VPKG provider functions will be added here
+	),
+)
+
+var configPath string
+
+func init() {
+	// Register flag for custom config path (optional)
+	flag.StringVar(&configPath, "config", "", "Path to config file or directory")
+}
+
+// NewConfig creates a new config by loading and merging all config files
+func NewConfig() (*Config, error) {
+	// Parse flags if not already parsed
+	if !flag.Parsed() {
+		flag.Parse()
+	}
+
+	// Prepare loader options
+	opts := pkgconfig.DefaultLoaderOptions()
+	opts.CommandName = pkgconfig.DetectCommandName()
+
+	// Override config directory if flag provided
+	if configPath != "" {
+		opts.ConfigDir = configPath
+	}
+
+	// Load and merge all config files
+	data, err := pkgconfig.LoadForCommand(opts)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load config: %w", err)
+	}
+
+	// Unmarshal into Config struct
+	var cfg Config
+	decoder, err := mapstructure.NewDecoder(&mapstructure.DecoderConfig{
+		Result:           &cfg,
+		WeaklyTypedInput: true,
+		TagName:          "mapstructure",
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to create decoder: %w", err)
+	}
+
+	if err := decoder.Decode(data); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal config: %w", err)
+	}
+
+	// Validate config
+	if err := pkgconfig.Validate(&cfg); err != nil {
+		return nil, err
+	}
+
+	return &cfg, nil
+}

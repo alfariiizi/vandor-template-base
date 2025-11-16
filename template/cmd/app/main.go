@@ -8,7 +8,7 @@ import (
 
 	"go.uber.org/fx"
 
-	"{{.ModuleName}}/internal/pkg/config"
+	"{{.ModuleName}}/cmd/app/config"
 	"{{.ModuleName}}/internal/pkg/logger"
 
 	// Import VPKG modules here:

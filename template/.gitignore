@@ -19,9 +19,17 @@ vendor/
 # Go workspace file
 go.work
 
-# Config files (keep examples)
+# Config files and secrets (keep examples)
 config/config.yaml
+config/*.yaml
+config/*.yml
+!config/*.example.yaml
 .env
+.env.local
+.env.*.local
+*.secret.yaml
+*.secret.yml
+config/secrets/
 
 # IDE
 .idea/
